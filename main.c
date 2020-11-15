@@ -46,6 +46,7 @@ log_printf(5, "[main] mi.icon_res.icon_main=%d; mi.icon_res.icon_label_ru=%d; mi
 					  anidata->mi.icon_res.icon_label_en);
 */
 
+// зарегистрируем стандартные обработчики событий
 reg_menu(anidata->mi.regmenu, 0);
 
 set_var_swipe_screen_active_number(anidata->mi.screen);
@@ -68,8 +69,10 @@ switch (anidata->mi.regmenu->curr_scr){
 	// установка кадров анимации для конкретного пункта меню
 	case MAIN_MENU_STATUS:		{ anidata->frame = MAIN_MENU_STATUS_FIRST_FRAME;	anidata->last_frame = MAIN_MENU_STATUS_LAST_FRAME; 		break;}
 	case MAIN_MENU_ACTIVITY:	{
+		//	установка кадров анимации для конкретного пункта активности. 0 - основной значок в главном меню, 1 - бег, 2 - дорожка и т.д.
 		switch (anidata->mi.screen){
 			case 0:	{ anidata->frame = MAIN_MENU_ACTIVITY_FIRST_FRAME; 	anidata->last_frame = MAIN_MENU_ACTIVITY_LAST_FRAME; 	break;}
+			// если приложение вернет ERROR_ITEM_NOT_FOUNT то отработает стандартная процедура из прошивки
 			default: return ERROR_ITEM_NOT_FOUNT;
 		}
 		break;
@@ -77,8 +80,10 @@ switch (anidata->mi.regmenu->curr_scr){
 	case MAIN_MENU_WEATHER:	    { anidata->frame = MAIN_MENU_WEATHER_FIRST_FRAME; 	anidata->last_frame = MAIN_MENU_WEATHER_LAST_FRAME; 	break;}
 	case MAIN_MENU_ALARM:		{ anidata->frame = MAIN_MENU_ALARM_FIRST_FRAME; 	anidata->last_frame = MAIN_MENU_ALARM_LAST_FRAME; 		break;}
 	case MAIN_MENU_TIMER:		{
+		//	установка кадров анимации для конкретного пункта таймера. 0 - основной значок в главном меню, 1 - секундомер, 2 - таймер
 		switch (anidata->mi.screen){
 			case 0:	{ anidata->frame = MAIN_MENU_TIMER_FIRST_FRAME; 	anidata->last_frame = MAIN_MENU_TIMER_LAST_FRAME; 		break;}
+			// если приложение вернет ERROR_ITEM_NOT_FOUNT то отработает стандартная процедура из прошивки
 			default: return ERROR_ITEM_NOT_FOUNT;
 		}
 		break;
@@ -86,22 +91,24 @@ switch (anidata->mi.regmenu->curr_scr){
 	case MAIN_MENU_COMPASS:	    { anidata->frame = MAIN_MENU_COMPASS_FIRST_FRAME; 	anidata->last_frame = MAIN_MENU_COMPASS_LAST_FRAME; 	break;}
 	case MAIN_MENU_OPTIONS:	    { anidata->frame = MAIN_MENU_OPTIONS_FIRST_FRAME; 	anidata->last_frame = MAIN_MENU_OPTIONS_LAST_FRAME; 	break;}
 	case MAIN_MENU_ALIPAY:	    { anidata->frame = MAIN_MENU_ALIPAY_FIRST_FRAME; 	anidata->last_frame = MAIN_MENU_ALIPAY_LAST_FRAME; 		break;}
+	
+	// если приложение вернет ERROR_ITEM_NOT_FOUNT то отработает стандартная процедура из прошивки
 	default:	return ERROR_ITEM_NOT_FOUNT;
-				//				{ anidata->frame = MAIN_MENU_UNDEF_FIRST_FRAME; 	anidata->last_frame = MAIN_MENU_UNFEF_LAST_FRAME; 		break;}
 	
 }
 
-	
+
 set_bg_color(COLOR_BLACK);
 fill_screen_bg();
 set_graph_callback_to_ram_1();
 load_font();
 
+// если во время анимации нужно отрабатывать нажатия то раскоментировать ниже 2 строки
 //set_ptr_key_press_func(dispatch_animation);		//	установим обработчик нажатий на кнопку на период анимации
 //set_ptr_menu_dispatch_func(dispatch_animation);	//	установим обработчик нажатий на период анимации
+
 set_ptr_screen_job_func(screen_job);			//	установим обработчик экранного таймера
 set_update_period(1, ANIMATION_FRAME_TIME);		//	установим период вызова обработчика экранного таймера
-//vibrate(2, 100,100);
 return ERROR_NONE;
 }
 
@@ -110,10 +117,11 @@ struct ani_struct_** 	anidata_p = get_ptr_temp_buf_2(); 		//	указатель 
 struct ani_struct_ *	anidata = *anidata_p;					//	указатель на номер кадра
 
 
-set_ptr_key_press_func(anidata->mi.regmenu->key_press);	//	установим обработчик нажатий на кнопку
-set_ptr_menu_dispatch_func(anidata->mi.regmenu->dispatch_func);	//	установим обработчик нажатий пункта меню
-set_ptr_screen_job_func(NULL);	//	установим обработчик экранного таймера
-set_update_period(0, 0);		//	установим период вызова обработчика экранного таймера
+// если во время анимации нужно отрабатывать нажатия то раскоментировать ниже 2 строки
+//set_ptr_key_press_func(anidata->mi.regmenu->key_press);	//	установим обработчик нажатий на кнопку
+//set_ptr_menu_dispatch_func(anidata->mi.regmenu->dispatch_func);	//	установим обработчик нажатий пункта меню
+set_ptr_screen_job_func(NULL);	//	удалим обработчик экранного таймера
+set_update_period(0, 0);		//	отключим вызов обработчика экранного таймера
 
 // вызываем функцию возврата (обычно это меню запуска), в качестве параметра указываем адрес функции нашего приложения
 show_menu(anidata->ret_f, (int) main);	
@@ -166,39 +174,21 @@ ticks = ANIMATION_FRAME_TIME - (get_tick_count() - ticks);
  if ( anidata->frame < anidata->last_frame ) {
 	anidata->frame++;
 	
+	//	логи сильно замедляют анимацию
 	//log_printf(5, "[screen_job] frame=%d/%d; label=%d; ticks=%d \r\n", anidata->frame, anidata->last_frame, anidata->label, ticks);
 
     set_update_period(1, ANIMATION_FRAME_TIME);
  }
   else
  {  
-/*
-	log_printf(5, "[screen_job] mi.regmenu=0x%X; mi.regmenu->current_screen=0x%X\r\n", 
-								anidata->mi.regmenu, anidata->mi.regmenu->curr_scr);
 	
-	log_printf(5, "[screen_job] before: key_press=0x%X; dispatch=0x%X; screen_job=0x%x \r\n", 
-					get_ptr_key_press_func(), 
-					get_ptr_menu_dispatch_func(), 
-					get_ptr_screen_job_func());
-
-
-	log_printf(5, "[screen_job] set: key_press=0x%X; dispatch=0x%X; screen_job=0x%x \r\n", 
-					anidata->mi.regmenu->key_press,
-					anidata->mi.regmenu->dispatch_func,
-					NULL);
-	*/
+// если во время анимации нужно отрабатывать нажатия то раскоментировать ниже 2 строки
 //	set_ptr_key_press_func(anidata->mi.regmenu->key_press);	//	установим обработчик нажатий на кнопку
 //	set_ptr_menu_dispatch_func(anidata->mi.regmenu->dispatch_func);	//	установим обработчик нажатий пункта меню
-	set_ptr_screen_job_func(NULL);	//	установим обработчик экранного таймера
-/*
-	log_printf(5, "[screen_job] after: key_press=0x%X; dispatch=0x%X; screen_job=0x%x \r\n", 
-					get_ptr_key_press_func(), 
-					get_ptr_menu_dispatch_func(), 
-					get_ptr_screen_job_func());
-*/
-	set_update_period(0, 0);		//	установим период вызова обработчика экранного таймера
 
-	//log_printf(5, "[screen_job] ret_f=0x%X \r\n", anidata->ret_f);
+	set_ptr_screen_job_func(NULL);	//	удалим обработчик экранного таймера
+	set_update_period(0, 0);		//	отключим вызов обработчика экранного таймера
+
 	show_menu(anidata->ret_f, (int) main);
  }
  

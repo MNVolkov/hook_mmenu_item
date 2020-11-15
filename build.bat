@@ -21,9 +21,11 @@
 
 @for /f "tokens=2 delims=[=]"  %%i in ('"!GCC! !GCC_OPT! -print-search-dirs"') do	SET LIB_SRCH=%%~i
 
-set LIB_SRCH=!LIB_SRCH:;= -L !
+set LIB_SRCH=!LIB_SRCH:;=" -L "!
 	
-@SET LD_OPT=-L!LIB_BIP_PATH! -L!LIB_SRCH! -EL -N -Os --cref -pie --gc-sections	
+@SET LD_OPT=-L"!LIB_BIP_PATH!" -L"!LIB_SRCH!" -EL -N -Os --cref -pie --gc-sections	
+
+rem echo !LD_OPT!
 rem Включить подробный вывод линковщика (если потерялись библиотеки)
 rem @SET LD_OPT=!LD_OPT! --verbose
 
@@ -133,5 +135,4 @@ pause
  @ set /p .=%BS%%BS%%BS%%BS%%BS%%BS%%BS%%BS%%BS%<nul
  @ if "%3" neq "" echo.
  @exit /b 0
-::===========================================================
-====================================================
+::===============================================================================================================
